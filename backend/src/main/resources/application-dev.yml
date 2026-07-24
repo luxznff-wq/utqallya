@@ -1,0 +1,9 @@
+# Perfil de desarrollo local.
+logging:
+  level:
+    com.utqallya.backend: DEBUG
+    org.hibernate.SQL: DEBUG
+
+spring:
+  jpa:
+    show-sql: true

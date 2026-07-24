@@ -1,0 +1,26 @@
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**
+!**/src/test/**
+
+### Config sensible ###
+.env
+application-local.yml
+firebase-service-account.json
+
+### IDE ###
+.idea/
+*.iws
+*.iml
+*.ipr
+.vscode/
+.classpath
+.project
+.settings/
+
+### Sistema operativo ###
+.DS_Store
+Thumbs.db
+
+### Logs ###
+*.log

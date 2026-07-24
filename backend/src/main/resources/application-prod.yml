@@ -1,0 +1,9 @@
+# Perfil de producción. Todo se alimenta de variables de entorno reales del servidor.
+logging:
+  level:
+    com.utqallya.backend: INFO
+    org.hibernate.SQL: WARN
+
+spring:
+  jpa:
+    show-sql: false

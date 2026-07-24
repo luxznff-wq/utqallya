@@ -1,0 +1,18 @@
+# Levanta únicamente PostgreSQL para desarrollo local.
+# El backend se ejecuta directamente con Maven (ver README) para facilitar el debug.
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: utqallya-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: utqallya
+      POSTGRES_USER: utqallya
+      POSTGRES_PASSWORD: utqallya
+    ports:
+      - "5432:5432"
+    volumes:
+      - utqallya_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  utqallya_postgres_data:

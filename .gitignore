@@ -1,0 +1,11 @@
+# Editores / IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Los subproyectos (backend/, mobile/) tienen su propio .gitignore específico.
