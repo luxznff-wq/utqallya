@@ -1,0 +1,12 @@
+# El Dockerfile de la raíz solo necesita backend/. Excluir el resto acelera el
+# build y evita copiar node_modules gigantes al contexto.
+mobile/
+admin/
+docs/
+scripts/
+**/node_modules/
+**/target/
+**/dist/
+*.svg
+*.md
+.git/
