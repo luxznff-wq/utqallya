@@ -1,10 +1,15 @@
 import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react';
-import * as SecureStore from 'expo-secure-store';
 
 import { AUTH_TOKEN_STORAGE_KEY, AUTH_USER_STORAGE_KEY } from '@/constants/config';
 import { setUnauthorizedHandler } from '@/services/api/client';
-import { authService, RegisterDriverPayload, RegisterDriverPhotos, RegisterPassengerPayload } from '@/services/authService';
+import {
+  authService,
+  RegisterDriverPayload,
+  RegisterDriverPhotos,
+  RegisterPassengerPayload,
+} from '@/services/authService';
 import { notificationService } from '@/services/notificationService';
+import { secureStorage } from '@/services/secureStorage';
 import { userService } from '@/services/userService';
 import { AuthResponse, UserProfile } from '@/types';
 
@@ -20,13 +25,13 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 async function persistSession(response: AuthResponse) {
-  await SecureStore.setItemAsync(AUTH_TOKEN_STORAGE_KEY, response.accessToken);
-  await SecureStore.setItemAsync(AUTH_USER_STORAGE_KEY, JSON.stringify(response.user));
+  await secureStorage.setItemAsync(AUTH_TOKEN_STORAGE_KEY, response.accessToken);
+  await secureStorage.setItemAsync(AUTH_USER_STORAGE_KEY, JSON.stringify(response.user));
 }
 
 async function clearSession() {
-  await SecureStore.deleteItemAsync(AUTH_TOKEN_STORAGE_KEY);
-  await SecureStore.deleteItemAsync(AUTH_USER_STORAGE_KEY);
+  await secureStorage.deleteItemAsync(AUTH_TOKEN_STORAGE_KEY);
+  await secureStorage.deleteItemAsync(AUTH_USER_STORAGE_KEY);
 }
 
 /** Intenta registrar el push token en el backend; nunca bloquea el login si falla. */
@@ -54,8 +59,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     (async () => {
       const [token, storedUser] = await Promise.all([
-        SecureStore.getItemAsync(AUTH_TOKEN_STORAGE_KEY),
-        SecureStore.getItemAsync(AUTH_USER_STORAGE_KEY),
+        secureStorage.getItemAsync(AUTH_TOKEN_STORAGE_KEY),
+        secureStorage.getItemAsync(AUTH_USER_STORAGE_KEY),
       ]);
       if (token && storedUser) {
         setUser(JSON.parse(storedUser));
@@ -68,24 +73,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const response = await authService.loginPassengerOrDriver(email, password);
     await persistSession(response);
     setUser(response.user);
-    void trySyncPushToken();
+    trySyncPushToken().catch(() => undefined);
   }, []);
 
   const registerPassenger = useCallback(async (payload: RegisterPassengerPayload) => {
     const response = await authService.registerPassenger(payload);
     await persistSession(response);
     setUser(response.user);
-    void trySyncPushToken();
+    trySyncPushToken().catch(() => undefined);
   }, []);
 
   const registerDriver = useCallback(async (payload: RegisterDriverPayload, photos: RegisterDriverPhotos) => {
     const response = await authService.registerDriver(payload, photos);
     await persistSession(response);
     setUser(response.user);
-    void trySyncPushToken();
+    trySyncPushToken().catch(() => undefined);
   }, []);
 
   const logout = useCallback(async () => {
+    try {
+      await userService.removePushToken();
+    } catch {
+      // El cierre local debe funcionar aunque el servidor no esté disponible.
+    }
     await clearSession();
     setUser(null);
   }, []);

@@ -2,9 +2,13 @@ package com.utqallya.backend.dto.response;
 
 import com.utqallya.backend.entity.Trip;
 import com.utqallya.backend.entity.enums.TripStatus;
+import com.utqallya.backend.entity.enums.VehicleType;
+import com.utqallya.backend.entity.enums.CancelledBy;
+import com.utqallya.backend.entity.enums.PaymentMethodCode;
 
 import java.time.Instant;
 import java.util.UUID;
+import java.math.BigDecimal;
 
 /**
  * Representación de un viaje para el cliente. El código de confirmación
@@ -18,9 +22,10 @@ public record TripResponse(
         GeoLocationResponse origin,
         GeoLocationResponse destination,
         PaymentMethodResponse paymentMethod,
+        VehicleType vehicleType,
         Double distanceKm,
         Integer estimatedDurationMinutes,
-        Double fare,
+        BigDecimal agreedFare,
         Integer searchRadiusMeters,
         String confirmationCode,
         DriverResponse driver,
@@ -31,7 +36,10 @@ public record TripResponse(
         Instant startedAt,
         Instant finishedAt,
         Instant cancelledAt,
-        String cancelReason
+        Instant passengerPaymentConfirmedAt,
+        Instant driverPaymentConfirmedAt,
+        String cancelReason,
+        CancelledBy cancelledBy
 ) {
 
     public static TripResponse forPassenger(Trip trip) {
@@ -53,12 +61,16 @@ public record TripResponse(
                 GeoLocationResponse.from(trip.getOrigin()),
                 GeoLocationResponse.from(trip.getDestination()),
                 PaymentMethodResponse.from(trip.getPaymentMethod()),
+                trip.getVehicleType(),
                 trip.getDistanceKm(),
                 trip.getEstimatedDurationMinutes(),
-                trip.getFare(),
+                trip.getAgreedFare(),
                 trip.getSearchRadiusMeters(),
                 exposedCode,
-                trip.getDriver() != null ? DriverResponse.from(trip.getDriver()) : null,
+                trip.getDriver() != null
+                        ? DriverResponse.forTrip(trip.getDriver(),
+                                trip.getPaymentMethod().getCode() == PaymentMethodCode.YAPE)
+                        : null,
                 UserResponse.from(trip.getPassenger()),
                 trip.getCreatedAt(),
                 trip.getAcceptedAt(),
@@ -66,7 +78,10 @@ public record TripResponse(
                 trip.getStartedAt(),
                 trip.getFinishedAt(),
                 trip.getCancelledAt(),
-                trip.getCancelReason()
+                trip.getPassengerPaymentConfirmedAt(),
+                trip.getDriverPaymentConfirmedAt(),
+                trip.getCancelReason(),
+                trip.getCancelledBy()
         );
     }
 }

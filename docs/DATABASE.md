@@ -14,6 +14,8 @@ erDiagram
     DRIVERS ||--o| DRIVER_LOCATIONS : "reporta"
     USERS ||--o{ TRIPS : "solicita (pasajero)"
     DRIVERS ||--o{ TRIPS : "atiende"
+    TRIPS ||--o{ TRIP_OFFERS : "recibe"
+    DRIVERS ||--o{ TRIP_OFFERS : "propone"
     GEO_LOCATIONS ||--o{ TRIPS : "origen"
     GEO_LOCATIONS ||--o{ TRIPS : "destino"
     PAYMENT_METHODS ||--o{ TRIPS : "método elegido"
@@ -33,6 +35,8 @@ erDiagram
         uuid role_id FK
         boolean blocked
         varchar push_token
+        varchar emergency_contact_name
+        varchar emergency_contact_phone
     }
     VEHICLES {
         uuid id PK
@@ -50,7 +54,11 @@ erDiagram
         varchar dni_number
         text dni_photo_url
         text license_photo_url
+        date license_expires_at
         text soat_photo_url
+        date soat_expires_at
+        varchar yape_holder_name
+        varchar yape_phone
         varchar approval_status "PENDING|APPROVED|REJECTED|BLOCKED"
         varchar availability "AVAILABLE|UNAVAILABLE"
         double rating_average
@@ -86,9 +94,20 @@ erDiagram
         varchar confirmation_code "4-6 dígitos"
         double distance_km
         int estimated_duration_minutes
-        double fare
+        decimal agreed_fare
+        timestamptz passenger_payment_confirmed_at
+        timestamptz driver_payment_confirmed_at
         int search_radius_meters
+        varchar cancel_reason
+        varchar cancelled_by "PASSENGER | DRIVER | SYSTEM"
         bigint version "optimistic locking"
+    }
+    TRIP_OFFERS {
+        uuid id PK
+        uuid trip_id FK
+        uuid driver_id FK
+        decimal amount
+        varchar status "PENDING | SELECTED | REJECTED | WITHDRAWN | EXPIRED"
     }
     RATINGS {
         uuid id PK

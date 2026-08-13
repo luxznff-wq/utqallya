@@ -23,4 +23,8 @@ export interface DriverProfile {
   ratingAverage: number;
   totalTrips: number;
   rejectionReason: string | null;
+  licenseExpiresAt: string | null;
+  soatExpiresAt: string | null;
+  yapeHolderName: string | null;
+  yapePhone: string | null;
 }

@@ -4,9 +4,10 @@ Aplicación de transporte de pasajeros para los distritos de **Acarí** y
 **Bella Unión** (provincia de Caravelí, departamento de Arequipa, Perú).
 
 Es un MVP profesional, deliberadamente simple: solo conecta pasajeros con
-conductores de auto o mototaxi mediante un flujo de solicitud → aceptación →
-código de confirmación → viaje → calificación. Sin chat, sin negociación de
-tarifa, sin subastas, sin funciones que no aporten a ese objetivo.
+conductores de auto o mototaxi mediante un flujo de solicitud → ofertas de
+conductores → elección del pasajero → código de confirmación → viaje →
+calificación. El conductor propone el precio y el pasajero decide antes de la
+asignación.
 
 ## Estructura del repositorio
 
@@ -87,10 +88,10 @@ Ver todas las variables de entorno (backend y mobile) en
 
 ## Flujo de un viaje, en una línea
 
-El pasajero elige origen y destino → todos los conductores aprobados y
-disponibles dentro del radio configurado reciben la solicitud → el primer
-conductor que la acepta se la queda (los demás ven que ya no está
-disponible) → el conductor llega al punto de recogida → el pasajero le dicta
+El pasajero elige origen y destino → los conductores aprobados y disponibles
+dentro del radio reciben la solicitud → cada conductor interesado propone su
+precio → el pasajero compara y elige una oferta → el conductor seleccionado
+llega al punto de recogida → el pasajero le dicta
 un código numérico que ve en su pantalla → el conductor lo ingresa y el
 viaje comienza → al llegar al destino el conductor lo finaliza → el pasajero
 califica de 1 a 5 estrellas.
@@ -99,6 +100,6 @@ califica de 1 a 5 estrellas.
 
 MVP funcional de extremo a extremo (backend + app móvil) listo para
 conectarse a credenciales reales de Google Maps, Firebase y Cloudinary antes
-de un despliegue a producción. Los íconos/splash en `mobile/assets/` son
-marcadores de posición (placeholders): reemplázalos con el arte final de
-marca antes de publicar en las tiendas.
+de un despliegue a producción. `mobile/assets/` contiene una identidad visual
+provisional completa y dimensionada para Expo; debe ser aprobada por el
+responsable de marca antes de publicar en las tiendas.

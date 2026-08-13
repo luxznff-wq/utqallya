@@ -1,6 +1,6 @@
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { Button, PhotoPickerField, ScreenContainer, TextField } from '@/components';
 import { PickedPhoto } from '@/components/PhotoPickerField';
@@ -24,6 +24,8 @@ export function RegisterDriverScreen({ navigation }: Props) {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [dniNumber, setDniNumber] = useState('');
+  const [licenseExpiresAt, setLicenseExpiresAt] = useState('');
+  const [soatExpiresAt, setSoatExpiresAt] = useState('');
   const [plate, setPlate] = useState('');
   const [vehicleType, setVehicleType] = useState<VehicleType>('CAR');
   const [vehicleBrand, setVehicleBrand] = useState('');
@@ -38,8 +40,13 @@ export function RegisterDriverScreen({ navigation }: Props) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit() {
-    if (!fullName || !email || !phone || !password || !dniNumber || !plate) {
+    if (!fullName || !email || !phone || !password || !dniNumber || !plate || !licenseExpiresAt || !soatExpiresAt) {
       Alert.alert('Datos incompletos', 'Completa todos los campos obligatorios');
+      return;
+    }
+    const isoDatePattern = /^\d{4}-\d{2}-\d{2}$/;
+    if (!isoDatePattern.test(licenseExpiresAt) || !isoDatePattern.test(soatExpiresAt)) {
+      Alert.alert('Fechas inválidas', 'Usa el formato AAAA-MM-DD para licencia y SOAT.');
       return;
     }
     if (!dniPhoto || !licensePhoto || !soatPhoto || !vehiclePhoto) {
@@ -56,6 +63,8 @@ export function RegisterDriverScreen({ navigation }: Props) {
           phone,
           password,
           dniNumber,
+          licenseExpiresAt,
+          soatExpiresAt,
           plate: plate.toUpperCase(),
           vehicleType,
           vehicleBrand: vehicleBrand || undefined,
@@ -64,7 +73,10 @@ export function RegisterDriverScreen({ navigation }: Props) {
         },
         { dniPhoto, licensePhoto, soatPhoto, vehiclePhoto }
       );
-      Alert.alert('Solicitud enviada', 'Tu cuenta quedó pendiente de aprobación. Te avisaremos cuando puedas empezar a recibir viajes.');
+      Alert.alert(
+        'Solicitud enviada',
+        'Tu cuenta quedó pendiente de aprobación. Te avisaremos cuando puedas empezar a recibir viajes.'
+      );
     } catch (error) {
       Alert.alert('No se pudo crear la cuenta', (error as Error).message);
     } finally {
@@ -80,10 +92,22 @@ export function RegisterDriverScreen({ navigation }: Props) {
 
         <Text style={styles.sectionTitle}>Datos personales</Text>
         <TextField label="Nombre completo" value={fullName} onChangeText={setFullName} />
-        <TextField label="Correo electrónico" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
+        <TextField
+          label="Correo electrónico"
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
+        />
         <TextField label="Teléfono" value={phone} onChangeText={setPhone} keyboardType="phone-pad" maxLength={9} />
         <TextField label="Contraseña" value={password} onChangeText={setPassword} secureTextEntry />
-        <TextField label="Número de DNI" value={dniNumber} onChangeText={setDniNumber} keyboardType="number-pad" maxLength={8} />
+        <TextField
+          label="Número de DNI"
+          value={dniNumber}
+          onChangeText={setDniNumber}
+          keyboardType="number-pad"
+          maxLength={8}
+        />
 
         <Text style={styles.sectionTitle}>Vehículo</Text>
         <View style={styles.vehicleTypeRow}>
@@ -107,7 +131,21 @@ export function RegisterDriverScreen({ navigation }: Props) {
         <Text style={styles.sectionTitle}>Documentos</Text>
         <PhotoPickerField label="Foto del DNI" value={dniPhoto} onChange={setDniPhoto} />
         <PhotoPickerField label="Foto de la licencia de conducir" value={licensePhoto} onChange={setLicensePhoto} />
+        <TextField
+          label="Vencimiento de licencia (AAAA-MM-DD)"
+          value={licenseExpiresAt}
+          onChangeText={setLicenseExpiresAt}
+          placeholder="2027-12-31"
+          maxLength={10}
+        />
         <PhotoPickerField label="Foto del SOAT" value={soatPhoto} onChange={setSoatPhoto} />
+        <TextField
+          label="Vencimiento del SOAT (AAAA-MM-DD)"
+          value={soatExpiresAt}
+          onChangeText={setSoatExpiresAt}
+          placeholder="2027-12-31"
+          maxLength={10}
+        />
         <PhotoPickerField label="Foto del vehículo" value={vehiclePhoto} onChange={setVehiclePhoto} />
 
         <Button label="Enviar solicitud" onPress={handleSubmit} loading={isSubmitting} style={styles.submit} />

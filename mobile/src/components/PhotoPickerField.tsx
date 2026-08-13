@@ -1,6 +1,6 @@
+import * as ImagePicker from 'expo-image-picker';
 import React from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
 
 import { colors, radius, spacing, typography } from '@/theme';
 
@@ -44,7 +44,13 @@ export function PhotoPickerField({ label, value, onChange }: PhotoPickerFieldPro
   return (
     <View style={styles.container}>
       <Text style={styles.label}>{label}</Text>
-      <Pressable style={styles.picker} onPress={pickImage}>
+      <Pressable
+        style={styles.picker}
+        onPress={pickImage}
+        accessibilityRole="button"
+        accessibilityLabel={`${label}. ${value ? 'Foto seleccionada' : 'Sin foto'}`}
+        accessibilityHint="Abre la galería para elegir una imagen"
+      >
         {value ? (
           <Image source={{ uri: value.uri }} style={styles.preview} />
         ) : (

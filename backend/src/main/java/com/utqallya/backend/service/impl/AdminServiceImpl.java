@@ -2,7 +2,7 @@ package com.utqallya.backend.service.impl;
 
 import com.utqallya.backend.dto.request.RejectDriverRequest;
 import com.utqallya.backend.dto.response.AdminStatsResponse;
-import com.utqallya.backend.dto.response.DriverResponse;
+import com.utqallya.backend.dto.response.AdminDriverResponse;
 import com.utqallya.backend.dto.response.TripResponse;
 import com.utqallya.backend.entity.Driver;
 import com.utqallya.backend.entity.User;
@@ -11,8 +11,11 @@ import com.utqallya.backend.entity.enums.NotificationType;
 import com.utqallya.backend.entity.enums.RoleName;
 import com.utqallya.backend.entity.enums.TripStatus;
 import com.utqallya.backend.exception.ResourceNotFoundException;
+import com.utqallya.backend.exception.BadRequestException;
 import com.utqallya.backend.repository.DriverRepository;
 import com.utqallya.backend.repository.TripRepository;
+import com.utqallya.backend.repository.TripOfferRepository;
+import com.utqallya.backend.entity.enums.TripOfferStatus;
 import com.utqallya.backend.repository.UserRepository;
 import com.utqallya.backend.service.AdminService;
 import com.utqallya.backend.service.NotificationService;
@@ -35,21 +38,27 @@ public class AdminServiceImpl implements AdminService {
     private final DriverRepository driverRepository;
     private final UserRepository userRepository;
     private final TripRepository tripRepository;
+    private final TripOfferRepository tripOfferRepository;
     private final NotificationService notificationService;
 
     @Override
     @Transactional(readOnly = true)
-    public Page<DriverResponse> getDrivers(DriverApprovalStatus status, Pageable pageable) {
+    public Page<AdminDriverResponse> getDrivers(DriverApprovalStatus status, Pageable pageable) {
         Page<Driver> drivers = status != null
                 ? driverRepository.findByApprovalStatus(status, pageable)
                 : driverRepository.findAll(pageable);
-        return drivers.map(DriverResponse::from);
+        return drivers.map(AdminDriverResponse::from);
     }
 
     @Override
     @Transactional
-    public DriverResponse approveDriver(UUID driverId) {
+    public AdminDriverResponse approveDriver(UUID driverId) {
         Driver driver = getDriverOrThrow(driverId);
+        LocalDate today = LocalDate.now();
+        if (driver.getLicenseExpiresAt() == null || driver.getLicenseExpiresAt().isBefore(today)
+                || driver.getSoatExpiresAt() == null || driver.getSoatExpiresAt().isBefore(today)) {
+            throw new BadRequestException("No se puede aprobar: la licencia o el SOAT está vencido o sin fecha");
+        }
         driver.setApprovalStatus(DriverApprovalStatus.APPROVED);
         driver.setRejectionReason(null);
         driverRepository.save(driver);
@@ -57,12 +66,12 @@ public class AdminServiceImpl implements AdminService {
         notificationService.notify(driver.getUser(), NotificationType.DRIVER_APPROVED,
                 "¡Ya puedes conducir en Utqallya!", "Tu documentación fue aprobada. Actívate para recibir viajes.", null);
 
-        return DriverResponse.from(driver);
+        return AdminDriverResponse.from(driver);
     }
 
     @Override
     @Transactional
-    public DriverResponse rejectDriver(UUID driverId, RejectDriverRequest request) {
+    public AdminDriverResponse rejectDriver(UUID driverId, RejectDriverRequest request) {
         Driver driver = getDriverOrThrow(driverId);
         driver.setApprovalStatus(DriverApprovalStatus.REJECTED);
         driver.setRejectionReason(request.reason());
@@ -72,7 +81,7 @@ public class AdminServiceImpl implements AdminService {
         notificationService.notify(driver.getUser(), NotificationType.DRIVER_REJECTED,
                 "Tu solicitud fue rechazada", "Motivo: " + request.reason(), null);
 
-        return DriverResponse.from(driver);
+        return AdminDriverResponse.from(driver);
     }
 
     @Override
@@ -80,6 +89,8 @@ public class AdminServiceImpl implements AdminService {
     public void blockUser(UUID userId) {
         User user = getUserOrThrow(userId);
         user.setBlocked(true);
+        user.setSessionVersion(user.getSessionVersion() + 1);
+        user.setPushToken(null);
         userRepository.save(user);
 
         notificationService.notify(user, NotificationType.ACCOUNT_BLOCKED,
@@ -115,7 +126,10 @@ public class AdminServiceImpl implements AdminService {
                 tripRepository.countByCreatedAtAfter(startOfToday),
                 tripRepository.countByStatus(TripStatus.IN_PROGRESS),
                 completed,
-                Math.round(driverRepository.averageRatingAcrossDrivers() * 100.0) / 100.0
+                Math.round(driverRepository.averageRatingAcrossDrivers() * 100.0) / 100.0,
+                tripOfferRepository.count(),
+                tripOfferRepository.countByStatus(TripOfferStatus.SELECTED),
+                Math.round(tripOfferRepository.averageSelectedAmount() * 100.0) / 100.0
         );
     }
 

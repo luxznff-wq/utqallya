@@ -1,6 +1,8 @@
 package com.utqallya.backend.entity;
 
 import com.utqallya.backend.entity.enums.TripStatus;
+import com.utqallya.backend.entity.enums.VehicleType;
+import com.utqallya.backend.entity.enums.CancelledBy;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -17,6 +19,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.Instant;
+import java.math.BigDecimal;
 
 /**
  * Un viaje solicitado por un pasajero. Es el agregado principal del dominio:
@@ -55,6 +58,11 @@ public class Trip extends BaseEntity {
     @JoinColumn(name = "payment_method_id", nullable = false)
     private PaymentMethod paymentMethod;
 
+    /** Tipo de vehículo elegido por el pasajero: solo se notifica a conductores con este tipo. */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private VehicleType vehicleType;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 25)
     @Builder.Default
@@ -65,14 +73,17 @@ public class Trip extends BaseEntity {
     private String confirmationCode;
 
     @Column(nullable = false)
+    @Builder.Default
+    private Integer confirmationAttempts = 0;
+
+    @Column(nullable = false)
     private Double distanceKm;
 
     @Column(nullable = false)
     private Integer estimatedDurationMinutes;
 
-    /** Tarifa estimada informada al pasajero antes de solicitar (sin tarifas dinámicas). */
-    @Column(nullable = false)
-    private Double fare;
+    @Column(precision = 10, scale = 2)
+    private BigDecimal agreedFare;
 
     @Column(nullable = false)
     private Integer searchRadiusMeters;
@@ -82,9 +93,15 @@ public class Trip extends BaseEntity {
     private Instant startedAt;
     private Instant finishedAt;
     private Instant cancelledAt;
+    private Instant passengerPaymentConfirmedAt;
+    private Instant driverPaymentConfirmedAt;
 
     @Column(length = 255)
     private String cancelReason;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private CancelledBy cancelledBy;
 
     /** Bloqueo optimista: evita que dos conductores "ganen" el mismo viaje en una condición de carrera. */
     @Version

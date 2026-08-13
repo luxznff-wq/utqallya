@@ -5,6 +5,7 @@ target/
 
 ### Config sensible ###
 .env
+.env.staging
 application-local.yml
 firebase-service-account.json
 

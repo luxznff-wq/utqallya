@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import { TRIP_POLL_INTERVAL_MS } from '@/constants/config';
+import { useAuth } from '@/context/AuthContext';
 import { tripService } from '@/services/tripService';
 import { Trip } from '@/types';
 
@@ -25,9 +26,10 @@ const TripContext = createContext<TripContextValue | undefined>(undefined);
  * la complejidad operativa de mantener conexiones persistentes (KISS).
  */
 export function TripProvider({ children }: { children: React.ReactNode }) {
+  const { user, isLoading: isAuthLoading } = useAuth();
   const [tripId, setTripId] = useState<string | null>(null);
   const [trip, setTrip] = useState<Trip | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchTrip = useCallback(async (id: string) => {
@@ -42,6 +44,28 @@ export function TripProvider({ children }: { children: React.ReactNode }) {
       // Un fallo puntual de red no debe tumbar el sondeo; se reintenta en el próximo ciclo.
     }
   }, []);
+
+  useEffect(() => {
+    if (isAuthLoading) {
+      return;
+    }
+    if (!user || user.role === 'ADMIN') {
+      setTripId(null);
+      setTrip(null);
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    tripService
+      .getMyActiveTrip()
+      .then((activeTrip) => {
+        setTrip(activeTrip);
+        setTripId(activeTrip?.id ?? null);
+      })
+      .catch(() => undefined)
+      .finally(() => setIsLoading(false));
+  }, [isAuthLoading, user]);
 
   useEffect(() => {
     if (!tripId) {
@@ -75,7 +99,10 @@ export function TripProvider({ children }: { children: React.ReactNode }) {
     }
   }, [tripId, fetchTrip]);
 
-  const value = useMemo(() => ({ trip, isLoading, track, stopTracking, refresh }), [trip, isLoading, track, stopTracking, refresh]);
+  const value = useMemo(
+    () => ({ trip, isLoading, track, stopTracking, refresh }),
+    [trip, isLoading, track, stopTracking, refresh]
+  );
 
   return <TripContext.Provider value={value}>{children}</TripContext.Provider>;
 }

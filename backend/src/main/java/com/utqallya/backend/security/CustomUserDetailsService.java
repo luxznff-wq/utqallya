@@ -27,7 +27,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         return new UserPrincipal(user);
     }
 
-    public UserDetails loadUserById(UUID id) {
+    public UserPrincipal loadUserById(UUID id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new UsernameNotFoundException("No existe un usuario con id: " + id));
         return new UserPrincipal(user);

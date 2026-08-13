@@ -30,4 +30,9 @@ public final class GeoUtils {
         double km = distanceMeters(lat1, lon1, lat2, lon2) / 1000.0;
         return Math.round(km * 100.0) / 100.0;
     }
+
+    /** Duración estimada (minutos) para recorrer una distancia a velocidad promedio constante. */
+    public static int estimateDurationMinutes(double distanceKm, double averageSpeedKmh) {
+        return (int) Math.max(1, Math.ceil(distanceKm / averageSpeedKmh * 60));
+    }
 }

@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.Map;
 
 /**
@@ -47,6 +48,27 @@ public class CloudinaryFileStorageServiceImpl implements FileStorageService {
         } catch (IOException ex) {
             log.error("Error subiendo archivo a Cloudinary (folder={})", folder, ex);
             throw new BadRequestException("No se pudo subir el archivo: " + folder);
+        }
+    }
+
+    @Override
+    public void delete(String url) {
+        if (url == null || url.isBlank()) {
+            return;
+        }
+        try {
+            String path = URI.create(url).getPath();
+            int uploadIndex = path.indexOf("/upload/");
+            if (uploadIndex < 0) {
+                throw new IllegalArgumentException("URL de Cloudinary no reconocida");
+            }
+            String publicId = path.substring(uploadIndex + "/upload/".length())
+                    .replaceFirst("^v\\d+/", "")
+                    .replaceFirst("\\.[^.]+$", "");
+            cloudinary.uploader().destroy(publicId, ObjectUtils.asMap("resource_type", "image"));
+        } catch (IOException | IllegalArgumentException ex) {
+            log.error("No se pudo eliminar el recurso de Cloudinary", ex);
+            throw new BadRequestException("No se pudieron eliminar todos los documentos. Inténtalo nuevamente");
         }
     }
 }

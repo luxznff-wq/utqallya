@@ -5,6 +5,7 @@ import com.utqallya.backend.entity.enums.DriverApprovalStatus;
 import com.utqallya.backend.entity.enums.DriverAvailability;
 
 import java.util.UUID;
+import java.time.LocalDate;
 
 public record DriverResponse(
         UUID id,
@@ -14,9 +15,21 @@ public record DriverResponse(
         DriverAvailability availability,
         Double ratingAverage,
         Integer totalTrips,
-        String rejectionReason
+        String rejectionReason,
+        LocalDate licenseExpiresAt,
+        LocalDate soatExpiresAt,
+        String yapeHolderName,
+        String yapePhone
 ) {
     public static DriverResponse from(Driver driver) {
+        return build(driver, true);
+    }
+
+    public static DriverResponse forTrip(Driver driver, boolean exposeYapeDetails) {
+        return build(driver, exposeYapeDetails);
+    }
+
+    private static DriverResponse build(Driver driver, boolean exposeYapeDetails) {
         return new DriverResponse(
                 driver.getId(),
                 UserResponse.from(driver.getUser()),
@@ -25,7 +38,11 @@ public record DriverResponse(
                 driver.getAvailability(),
                 driver.getRatingAverage(),
                 driver.getTotalTrips(),
-                driver.getRejectionReason()
+                driver.getRejectionReason(),
+                driver.getLicenseExpiresAt(),
+                driver.getSoatExpiresAt(),
+                exposeYapeDetails ? driver.getYapeHolderName() : null,
+                exposeYapeDetails ? driver.getYapePhone() : null
         );
     }
 }

@@ -1,7 +1,7 @@
 import axios, { AxiosError } from 'axios';
-import * as SecureStore from 'expo-secure-store';
 
 import { API_URL, AUTH_TOKEN_STORAGE_KEY } from '@/constants/config';
+import { secureStorage } from '@/services/secureStorage';
 
 /**
  * Cliente HTTP central de la app. Toda la capa de servicios pasa por aquí,
@@ -14,7 +14,8 @@ export const apiClient = axios.create({
 });
 
 apiClient.interceptors.request.use(async (config) => {
-  const token = await SecureStore.getItemAsync(AUTH_TOKEN_STORAGE_KEY);
+  config.headers['X-Request-ID'] = `mobile-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  const token = await secureStorage.getItemAsync(AUTH_TOKEN_STORAGE_KEY);
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }

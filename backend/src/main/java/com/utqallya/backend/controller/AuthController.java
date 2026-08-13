@@ -1,10 +1,13 @@
 package com.utqallya.backend.controller;
 
 import com.utqallya.backend.dto.request.LoginRequest;
+import com.utqallya.backend.dto.request.ForgotPasswordRequest;
+import com.utqallya.backend.dto.request.ResetPasswordRequest;
 import com.utqallya.backend.dto.request.RegisterDriverRequest;
 import com.utqallya.backend.dto.request.RegisterPassengerRequest;
 import com.utqallya.backend.dto.response.AuthResponse;
 import com.utqallya.backend.service.AuthService;
+import com.utqallya.backend.service.PasswordResetService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -25,6 +28,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class AuthController {
 
     private final AuthService authService;
+    private final PasswordResetService passwordResetService;
 
     @PostMapping("/register/passenger")
     public ResponseEntity<AuthResponse> registerPassenger(@Valid @RequestBody RegisterPassengerRequest request) {
@@ -50,5 +54,17 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
+    }
+
+    @PostMapping("/password/forgot")
+    public ResponseEntity<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        passwordResetService.requestReset(request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/password/reset")
+    public ResponseEntity<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        passwordResetService.resetPassword(request);
+        return ResponseEntity.noContent().build();
     }
 }

@@ -9,6 +9,7 @@ import com.utqallya.backend.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -19,9 +20,6 @@ public interface TripService {
 
     /** El pasajero solicita un viaje; se notifica a todos los conductores disponibles dentro del radio. */
     TripResponse requestTrip(User passenger, CreateTripRequest request);
-
-    /** Un conductor intenta tomar el viaje. Gana el primero cuya escritura sea atómica en base de datos. */
-    TripResponse acceptTrip(User driverUser, UUID tripId);
 
     /** El conductor marca que llegó al punto de recogida; el pasajero debe dictarle el código. */
     TripResponse markDriverArrived(User driverUser, UUID tripId);
@@ -35,9 +33,13 @@ public interface TripService {
     /** El pasajero o el conductor asignado cancelan el viaje (solo permitido antes de iniciar). */
     TripResponse cancelTrip(User actor, UUID tripId, CancelTripRequest request);
 
+    TripResponse confirmPayment(User actor, UUID tripId);
+
     TripResponse getTripForPassenger(User passenger, UUID tripId);
 
     TripResponse getTripForDriver(User driverUser, UUID tripId);
+
+    Optional<TripResponse> getActiveTrip(User user, boolean driver);
 
     /** Última posición conocida del conductor asignado, para dibujarla en el mapa del pasajero. */
     DriverLocationResponse getDriverLocationForTrip(User passenger, UUID tripId);

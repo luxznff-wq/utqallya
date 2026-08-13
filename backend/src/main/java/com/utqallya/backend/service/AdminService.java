@@ -2,7 +2,7 @@ package com.utqallya.backend.service;
 
 import com.utqallya.backend.dto.request.RejectDriverRequest;
 import com.utqallya.backend.dto.response.AdminStatsResponse;
-import com.utqallya.backend.dto.response.DriverResponse;
+import com.utqallya.backend.dto.response.AdminDriverResponse;
 import com.utqallya.backend.dto.response.TripResponse;
 import com.utqallya.backend.entity.enums.DriverApprovalStatus;
 import org.springframework.data.domain.Page;
@@ -17,11 +17,11 @@ import java.util.UUID;
  */
 public interface AdminService {
 
-    Page<DriverResponse> getDrivers(DriverApprovalStatus status, Pageable pageable);
+    Page<AdminDriverResponse> getDrivers(DriverApprovalStatus status, Pageable pageable);
 
-    DriverResponse approveDriver(UUID driverId);
+    AdminDriverResponse approveDriver(UUID driverId);
 
-    DriverResponse rejectDriver(UUID driverId, RejectDriverRequest request);
+    AdminDriverResponse rejectDriver(UUID driverId, RejectDriverRequest request);
 
     void blockUser(UUID userId);
 

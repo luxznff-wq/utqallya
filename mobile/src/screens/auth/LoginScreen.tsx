@@ -1,6 +1,6 @@
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { Button, ScreenContainer, TextField } from '@/components';
 import { useAuth } from '@/context/AuthContext';
@@ -56,6 +56,13 @@ export function LoginScreen({ navigation }: Props) {
       />
 
       <Button label="Iniciar sesión" onPress={handleLogin} loading={isSubmitting} style={styles.submit} />
+
+      <Button
+        label="Olvidé mi contraseña"
+        variant="secondary"
+        onPress={() => navigation.navigate('ForgotPassword')}
+        style={styles.secondaryAction}
+      />
 
       <Button
         label="Crear una cuenta"

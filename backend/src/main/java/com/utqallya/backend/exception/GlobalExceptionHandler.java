@@ -9,6 +9,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.util.List;
@@ -28,6 +29,14 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.badRequest().body(ApiErrorResponse.of(
                 HttpStatus.BAD_REQUEST.value(), "Bad Request", "Existen campos inválidos", request.getRequestURI(), details));
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiErrorResponse> handleUnreadableBody(
+            HttpMessageNotReadableException ex, HttpServletRequest request) {
+        return ResponseEntity.badRequest().body(ApiErrorResponse.of(
+                HttpStatus.BAD_REQUEST.value(), "Bad Request",
+                "El cuerpo de la solicitud no contiene JSON válido", request.getRequestURI()));
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)

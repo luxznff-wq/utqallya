@@ -1,5 +1,6 @@
 import { apiClient } from './api/client';
-import { CreateTripPayload, PagedResponse, Trip } from '@/types';
+
+import { CreateTripPayload, PagedResponse, Trip, TripOffer } from '@/types';
 
 export interface DriverLocationDto {
   latitude: number;
@@ -33,8 +34,32 @@ export const tripService = {
     return data;
   },
 
-  async acceptTrip(tripId: string): Promise<Trip> {
-    const { data } = await apiClient.post<Trip>(`/trips/${tripId}/accept`);
+  async getMyActiveTrip(): Promise<Trip | null> {
+    const response = await apiClient.get<Trip>('/trips/me/active');
+    return response.status === 204 ? null : response.data;
+  },
+
+  async createOffer(tripId: string, amount: number): Promise<TripOffer> {
+    const { data } = await apiClient.post<TripOffer>(`/trips/${tripId}/offers`, { amount });
+    return data;
+  },
+
+  async getOffers(tripId: string): Promise<TripOffer[]> {
+    const { data } = await apiClient.get<TripOffer[]>(`/trips/${tripId}/offers`);
+    return data;
+  },
+
+  async getMyOffers(): Promise<TripOffer[]> {
+    const { data } = await apiClient.get<TripOffer[]>('/trips/offers/me');
+    return data;
+  },
+
+  async withdrawOffer(tripId: string): Promise<void> {
+    await apiClient.delete(`/trips/${tripId}/offers/me`);
+  },
+
+  async selectOffer(tripId: string, offerId: string): Promise<Trip> {
+    const { data } = await apiClient.post<Trip>(`/trips/${tripId}/offers/${offerId}/select`);
     return data;
   },
 
@@ -55,6 +80,11 @@ export const tripService = {
 
   async cancelTrip(tripId: string, reason?: string): Promise<Trip> {
     const { data } = await apiClient.post<Trip>(`/trips/${tripId}/cancel`, { reason });
+    return data;
+  },
+
+  async confirmPayment(tripId: string): Promise<Trip> {
+    const { data } = await apiClient.post<Trip>(`/trips/${tripId}/confirm-payment`);
     return data;
   },
 

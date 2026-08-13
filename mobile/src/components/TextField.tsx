@@ -14,6 +14,8 @@ export function TextField({ label, error, style, ...inputProps }: TextFieldProps
     <View style={styles.container}>
       <Text style={styles.label}>{label}</Text>
       <TextInput
+        accessibilityLabel={inputProps.accessibilityLabel ?? label}
+        accessibilityHint={error}
         placeholderTextColor={colors.textMuted}
         style={[styles.input, error && styles.inputError, style]}
         {...inputProps}

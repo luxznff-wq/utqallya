@@ -39,6 +39,7 @@ public class JwtTokenProvider {
                 .subject(principal.getId().toString())
                 .claim("email", principal.getEmail())
                 .claim("role", role)
+                .claim("sessionVersion", principal.getSessionVersion())
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(expiry))
                 .signWith(signingKey())
@@ -56,6 +57,12 @@ public class JwtTokenProvider {
         } catch (Exception ex) {
             return false;
         }
+    }
+
+    public int getSessionVersion(String token) {
+        Integer version = parseClaims(token).get("sessionVersion", Integer.class);
+        // Compatibilidad durante el primer despliegue: los JWT previos equivalen a versión cero.
+        return version == null ? 0 : version;
     }
 
     private Claims parseClaims(String token) {

@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>Administración · Utqallya</title>
+    <link rel="stylesheet" href="/admin/styles.css" />
+  </head>
+  <body>
+    <main>
+      <section id="login-view" class="login-shell">
+        <form id="login-form" class="panel login-card">
+          <div class="brand">U</div>
+          <p class="eyebrow">UTQALLYA</p>
+          <h1>Panel administrativo</h1>
+          <p class="muted">Acceso exclusivo para personal autorizado.</p>
+          <label>Correo<input id="email" type="email" autocomplete="username" required /></label>
+          <label>Contraseña<input id="password" type="password" autocomplete="current-password" required /></label>
+          <button type="submit">Ingresar</button>
+          <p id="login-error" class="error" role="alert"></p>
+        </form>
+      </section>
+
+      <section id="app-view" class="hidden">
+        <header>
+          <div><span class="brand small">U</span><strong>Utqallya Admin</strong></div>
+          <div class="header-actions">
+            <button id="change-password" class="secondary">Cambiar clave</button>
+            <button id="logout" class="secondary">Cerrar sesión</button>
+          </div>
+        </header>
+
+        <div class="content">
+          <div class="heading">
+            <div><p class="eyebrow">OPERACIÓN</p><h1>Resumen del servicio</h1></div>
+            <button id="refresh" class="secondary">Actualizar</button>
+          </div>
+          <p id="global-error" class="error" role="alert"></p>
+          <section id="stats" class="stats" aria-label="Estadísticas"></section>
+
+          <nav>
+            <button class="tab active" data-tab="drivers">Conductores</button>
+            <button class="tab" data-tab="trips">Viajes</button>
+            <button class="tab" data-tab="incidents">Incidentes</button>
+            <button class="tab" data-tab="audit">Auditoría</button>
+          </nav>
+
+          <section id="drivers-panel" class="panel">
+            <div class="panel-heading">
+              <div><h2>Conductores</h2><p class="muted">Revisa documentos antes de aprobar.</p></div>
+              <select id="driver-filter" aria-label="Filtrar conductores">
+                <option value="">Todos</option>
+                <option value="PENDING">Pendientes</option>
+                <option value="APPROVED">Aprobados</option>
+                <option value="REJECTED">Rechazados</option>
+              </select>
+            </div>
+            <div id="drivers-list" class="cards"></div>
+          </section>
+
+          <section id="trips-panel" class="panel hidden">
+            <div class="panel-heading"><div><h2>Viajes recientes</h2><p class="muted">Últimos movimientos registrados.</p></div></div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Fecha</th><th>Pasajero</th><th>Ruta</th><th>Estado</th><th>Vehículo</th></tr></thead>
+                <tbody id="trips-list"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section id="incidents-panel" class="panel hidden">
+            <div class="panel-heading">
+              <div><h2>Incidentes</h2><p class="muted">Reportes enviados por pasajeros y conductores.</p></div>
+              <select id="incident-filter" aria-label="Filtrar incidentes">
+                <option value="">Todos</option>
+                <option value="OPEN">Abiertos</option>
+                <option value="IN_REVIEW">En revisión</option>
+                <option value="RESOLVED">Resueltos</option>
+              </select>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Fecha</th><th>Reportante</th><th>Categoría</th><th>Descripción</th><th>Estado</th><th>Acciones</th></tr></thead>
+                <tbody id="incidents-list"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section id="audit-panel" class="panel hidden">
+            <div class="panel-heading">
+              <div><h2>Auditoría administrativa</h2><p class="muted">Acciones sensibles realizadas por administradores.</p></div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Fecha</th><th>Administrador</th><th>Acción</th><th>Objetivo</th><th>Detalle</th><th>Request ID</th></tr></thead>
+                <tbody id="audit-list"></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+    <script src="/admin/app.js" defer></script>
+  </body>
+</html>

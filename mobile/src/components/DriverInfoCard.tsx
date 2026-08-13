@@ -8,10 +8,7 @@ import { DriverProfile } from '@/types';
 export function DriverInfoCard({ driver }: { driver: DriverProfile }) {
   return (
     <View style={styles.card}>
-      <Image
-        source={driver.vehicle?.photoUrl ? { uri: driver.vehicle.photoUrl } : undefined}
-        style={styles.photo}
-      />
+      <Image source={driver.vehicle?.photoUrl ? { uri: driver.vehicle.photoUrl } : undefined} style={styles.photo} />
       <View style={styles.info}>
         <Text style={typography.h3}>{driver.user.fullName}</Text>
         <Text style={styles.subtitle}>

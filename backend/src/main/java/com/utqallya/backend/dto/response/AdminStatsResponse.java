@@ -9,6 +9,9 @@ public record AdminStatsResponse(
         long tripsToday,
         long tripsInProgress,
         long tripsCompletedTotal,
-        double averageDriverRating
+        double averageDriverRating,
+        long offersReceived,
+        long offersSelected,
+        double averageAgreedFare
 ) {
 }

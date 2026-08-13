@@ -1,4 +1,5 @@
 import { apiClient } from './api/client';
+
 import { AuthResponse } from '@/types';
 
 export interface RegisterPassengerPayload {
@@ -14,6 +15,8 @@ export interface RegisterDriverPayload {
   phone: string;
   password: string;
   dniNumber: string;
+  licenseExpiresAt: string;
+  soatExpiresAt: string;
   plate: string;
   vehicleType: 'CAR' | 'MOTOTAXI';
   vehicleBrand?: string;
@@ -32,6 +35,14 @@ export const authService = {
   async loginPassengerOrDriver(email: string, password: string): Promise<AuthResponse> {
     const { data } = await apiClient.post<AuthResponse>('/auth/login', { email, password });
     return data;
+  },
+
+  async requestPasswordReset(email: string): Promise<void> {
+    await apiClient.post('/auth/password/forgot', { email });
+  },
+
+  async resetPassword(email: string, code: string, newPassword: string): Promise<void> {
+    await apiClient.post('/auth/password/reset', { email, code, newPassword });
   },
 
   async registerPassenger(payload: RegisterPassengerPayload): Promise<AuthResponse> {

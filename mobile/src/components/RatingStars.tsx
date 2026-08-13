@@ -14,8 +14,17 @@ export function RatingStars({ value, onChange, size = 40 }: RatingStarsProps) {
   return (
     <View style={styles.row}>
       {[1, 2, 3, 4, 5].map((star) => (
-        <Pressable key={star} onPress={() => onChange(star)} hitSlop={8}>
-          <Text style={[styles.star, { fontSize: size, color: star <= value ? colors.warning : colors.border }]}>★</Text>
+        <Pressable
+          key={star}
+          onPress={() => onChange(star)}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={`${star} ${star === 1 ? 'estrella' : 'estrellas'}`}
+          accessibilityState={{ selected: star === value }}
+        >
+          <Text style={[styles.star, { fontSize: size, color: star <= value ? colors.warning : colors.border }]}>
+            ★
+          </Text>
         </Pressable>
       ))}
     </View>

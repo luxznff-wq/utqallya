@@ -21,6 +21,7 @@ public class UserPrincipal implements UserDetails {
     private final String email;
     private final String passwordHash;
     private final boolean blocked;
+    private final int sessionVersion;
     private final Collection<? extends GrantedAuthority> authorities;
 
     public UserPrincipal(User user) {
@@ -28,6 +29,7 @@ public class UserPrincipal implements UserDetails {
         this.email = user.getEmail();
         this.passwordHash = user.getPasswordHash();
         this.blocked = user.isBlocked();
+        this.sessionVersion = user.getSessionVersion();
         this.authorities = List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().getName().name()));
     }
 

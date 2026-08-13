@@ -28,12 +28,27 @@ spring:
     multipart:
       max-file-size: 10MB
       max-request-size: 15MB
+  mail:
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${MAIL_SMTP_AUTH:true}
+          starttls:
+            enable: ${MAIL_STARTTLS:true}
 
 server:
   port: ${SERVER_PORT:8080}
   error:
     include-message: always
     include-binding-errors: always
+
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %-5level [%X{requestId:-no-request-id}] %logger{36} - %msg%n"
 
 springdoc:
   swagger-ui:
@@ -42,10 +57,13 @@ springdoc:
     path: /api-docs
 
 management:
+  health:
+    mail:
+      enabled: ${MAIL_ENABLED:false}
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,prometheus
 
 # Propiedades propias de la aplicación (com.utqallya.backend.config.AppProperties)
 utqallya:
@@ -55,9 +73,7 @@ utqallya:
   trip:
     search-radius-meters: ${TRIP_SEARCH_RADIUS_METERS:4000}
     confirmation-code-length: ${TRIP_CODE_LENGTH:4}
-    driver-response-timeout-seconds: ${TRIP_DRIVER_TIMEOUT_SECONDS:60}
-    base-fare: ${TRIP_BASE_FARE:3.0}
-    fare-per-km: ${TRIP_FARE_PER_KM:1.5}
+    driver-response-timeout-seconds: ${TRIP_DRIVER_TIMEOUT_SECONDS:180}
     average-speed-kmh: ${TRIP_AVERAGE_SPEED_KMH:25}
   cloudinary:
     cloud-name: ${CLOUDINARY_CLOUD_NAME:}
@@ -67,4 +83,12 @@ utqallya:
     credentials-file: ${FIREBASE_CREDENTIALS_FILE:}
     enabled: ${FIREBASE_ENABLED:false}
   cors:
-    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:19006,http://localhost:8081}
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:19006,http://localhost:8081,http://localhost:5173}
+  directions:
+    api-key: ${DIRECTIONS_API_KEY:}
+    enabled: ${DIRECTIONS_ENABLED:false}
+  password-reset:
+    mail-enabled: ${MAIL_ENABLED:false}
+    mail-from: ${MAIL_FROM:no-reply@utqallya.pe}
+    expiration-minutes: ${PASSWORD_RESET_EXPIRATION_MINUTES:15}
+    max-attempts: ${PASSWORD_RESET_MAX_ATTEMPTS:5}

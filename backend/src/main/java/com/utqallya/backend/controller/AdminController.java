@@ -1,11 +1,19 @@
 package com.utqallya.backend.controller;
 
 import com.utqallya.backend.dto.request.RejectDriverRequest;
+import com.utqallya.backend.dto.request.UpdateIncidentRequest;
 import com.utqallya.backend.dto.response.AdminStatsResponse;
-import com.utqallya.backend.dto.response.DriverResponse;
+import com.utqallya.backend.dto.response.AdminDriverResponse;
 import com.utqallya.backend.dto.response.TripResponse;
+import com.utqallya.backend.dto.response.IncidentResponse;
+import com.utqallya.backend.dto.response.AdminAuditLogResponse;
 import com.utqallya.backend.entity.enums.DriverApprovalStatus;
+import com.utqallya.backend.entity.enums.IncidentStatus;
 import com.utqallya.backend.service.AdminService;
+import com.utqallya.backend.service.IncidentService;
+import com.utqallya.backend.service.AdminAuditService;
+import com.utqallya.backend.security.CurrentUserResolver;
+import com.utqallya.backend.security.UserPrincipal;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -18,6 +26,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
@@ -29,35 +39,50 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
+@Transactional
 public class AdminController {
 
     private final AdminService adminService;
+    private final IncidentService incidentService;
+    private final AdminAuditService adminAuditService;
+    private final CurrentUserResolver currentUserResolver;
 
     @GetMapping("/drivers")
-    public ResponseEntity<Page<DriverResponse>> getDrivers(
+    public ResponseEntity<Page<AdminDriverResponse>> getDrivers(
             @RequestParam(required = false) DriverApprovalStatus status, Pageable pageable) {
         return ResponseEntity.ok(adminService.getDrivers(status, pageable));
     }
 
     @PostMapping("/drivers/{id}/approve")
-    public ResponseEntity<DriverResponse> approveDriver(@PathVariable UUID id) {
-        return ResponseEntity.ok(adminService.approveDriver(id));
+    public ResponseEntity<AdminDriverResponse> approveDriver(
+            @AuthenticationPrincipal UserPrincipal principal, @PathVariable UUID id) {
+        AdminDriverResponse response = adminService.approveDriver(id);
+        adminAuditService.record(currentUserResolver.resolve(principal), "DRIVER_APPROVED", "DRIVER", id, null);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/drivers/{id}/reject")
-    public ResponseEntity<DriverResponse> rejectDriver(@PathVariable UUID id, @Valid @RequestBody RejectDriverRequest request) {
-        return ResponseEntity.ok(adminService.rejectDriver(id, request));
+    public ResponseEntity<AdminDriverResponse> rejectDriver(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable UUID id, @Valid @RequestBody RejectDriverRequest request) {
+        AdminDriverResponse response = adminService.rejectDriver(id, request);
+        adminAuditService.record(currentUserResolver.resolve(principal), "DRIVER_REJECTED", "DRIVER", id, request.reason());
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/users/{id}/block")
-    public ResponseEntity<Void> blockUser(@PathVariable UUID id) {
+    public ResponseEntity<Void> blockUser(
+            @AuthenticationPrincipal UserPrincipal principal, @PathVariable UUID id) {
         adminService.blockUser(id);
+        adminAuditService.record(currentUserResolver.resolve(principal), "USER_BLOCKED", "USER", id, null);
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/users/{id}/unblock")
-    public ResponseEntity<Void> unblockUser(@PathVariable UUID id) {
+    public ResponseEntity<Void> unblockUser(
+            @AuthenticationPrincipal UserPrincipal principal, @PathVariable UUID id) {
         adminService.unblockUser(id);
+        adminAuditService.record(currentUserResolver.resolve(principal), "USER_UNBLOCKED", "USER", id, null);
         return ResponseEntity.noContent().build();
     }
 
@@ -69,5 +94,26 @@ public class AdminController {
     @GetMapping("/stats")
     public ResponseEntity<AdminStatsResponse> getStats() {
         return ResponseEntity.ok(adminService.getStats());
+    }
+
+    @GetMapping("/incidents")
+    public ResponseEntity<Page<IncidentResponse>> getIncidents(
+            @RequestParam(required = false) IncidentStatus status, Pageable pageable) {
+        return ResponseEntity.ok(incidentService.getAll(status, pageable));
+    }
+
+    @PostMapping("/incidents/{id}")
+    public ResponseEntity<IncidentResponse> updateIncident(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable UUID id, @Valid @RequestBody UpdateIncidentRequest request) {
+        IncidentResponse response = incidentService.update(id, request);
+        adminAuditService.record(currentUserResolver.resolve(principal), "INCIDENT_" + request.status(),
+                "INCIDENT", id, null);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/audit-logs")
+    public ResponseEntity<Page<AdminAuditLogResponse>> getAuditLogs(Pageable pageable) {
+        return ResponseEntity.ok(adminAuditService.getLogs(pageable));
     }
 }

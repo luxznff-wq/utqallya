@@ -13,4 +13,7 @@ public interface FileStorageService {
      * Sube un archivo a una carpeta lógica (p.ej. "drivers/dni") y devuelve la URL pública.
      */
     String upload(MultipartFile file, String folder);
+
+    /** Elimina un recurso previamente subido a partir de su URL segura. */
+    void delete(String url);
 }

@@ -1,6 +1,6 @@
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { Button, RatingStars, ScreenContainer, TextField } from '@/components';
 import { useTrip } from '@/context/TripContext';

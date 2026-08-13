@@ -2,6 +2,8 @@ package com.utqallya.backend.controller;
 
 import com.utqallya.backend.dto.request.UpdateAvailabilityRequest;
 import com.utqallya.backend.dto.request.UpdateDriverLocationRequest;
+import com.utqallya.backend.dto.request.UpdateDriverDocumentsRequest;
+import com.utqallya.backend.dto.request.UpdateDriverPaymentDetailsRequest;
 import com.utqallya.backend.dto.response.DriverResponse;
 import com.utqallya.backend.security.CurrentUserResolver;
 import com.utqallya.backend.security.UserPrincipal;
@@ -17,6 +19,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.multipart.MultipartFile;
 
 /** Endpoints exclusivos del propio conductor: perfil, disponibilidad y posición en tiempo real. */
 @RestController
@@ -44,5 +48,23 @@ public class DriverController {
                                                 @Valid @RequestBody UpdateDriverLocationRequest request) {
         driverService.updateLocation(currentUserResolver.resolve(principal), request);
         return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping(value = "/me/documents", consumes = "multipart/form-data")
+    public ResponseEntity<DriverResponse> updateDocuments(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestPart("data") UpdateDriverDocumentsRequest request,
+            @RequestPart("licensePhoto") MultipartFile licensePhoto,
+            @RequestPart("soatPhoto") MultipartFile soatPhoto) {
+        return ResponseEntity.ok(driverService.updateDocuments(
+                currentUserResolver.resolve(principal), request, licensePhoto, soatPhoto));
+    }
+
+    @PatchMapping("/me/payment-details")
+    public ResponseEntity<DriverResponse> updatePaymentDetails(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody UpdateDriverPaymentDetailsRequest request) {
+        return ResponseEntity.ok(driverService.updatePaymentDetails(
+                currentUserResolver.resolve(principal), request));
     }
 }

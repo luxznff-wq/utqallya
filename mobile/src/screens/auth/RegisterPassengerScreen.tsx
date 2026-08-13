@@ -1,6 +1,6 @@
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text } from 'react-native';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { Button, ScreenContainer, TextField } from '@/components';
 import { useAuth } from '@/context/AuthContext';
@@ -55,7 +55,13 @@ export function RegisterPassengerScreen({ navigation }: Props) {
           maxLength={9}
           placeholder="9XXXXXXXX"
         />
-        <TextField label="Contraseña" value={password} onChangeText={setPassword} secureTextEntry placeholder="Mínimo 8 caracteres" />
+        <TextField
+          label="Contraseña"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          placeholder="Mínimo 8 caracteres"
+        />
 
         <Button label="Registrarme" onPress={handleSubmit} loading={isSubmitting} style={styles.submit} />
         <Button label="Volver" variant="outline" onPress={() => navigation.goBack()} style={styles.secondaryAction} />

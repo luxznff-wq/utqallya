@@ -2,10 +2,13 @@ package com.utqallya.backend.dto.request;
 
 import com.utqallya.backend.entity.enums.VehicleType;
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+
+import java.time.LocalDate;
 
 /**
  * Datos textuales requeridos para el registro de un conductor.
@@ -31,6 +34,14 @@ public record RegisterDriverRequest(
         @NotBlank(message = "El número de DNI es obligatorio")
         @Pattern(regexp = "^\\d{8}$", message = "El DNI debe tener 8 dígitos")
         String dniNumber,
+
+        @NotNull(message = "La fecha de vencimiento de la licencia es obligatoria")
+        @Future(message = "La licencia debe estar vigente")
+        LocalDate licenseExpiresAt,
+
+        @NotNull(message = "La fecha de vencimiento del SOAT es obligatoria")
+        @Future(message = "El SOAT debe estar vigente")
+        LocalDate soatExpiresAt,
 
         @NotBlank(message = "La placa del vehículo es obligatoria")
         @Size(max = 10)

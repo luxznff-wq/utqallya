@@ -1,6 +1,6 @@
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { Button, DriverInfoCard, LoadingOverlay } from '@/components';
 import { useTrip } from '@/context/TripContext';
@@ -30,7 +30,11 @@ export function DriverFoundScreen({ navigation, route }: Props) {
 
       <DriverInfoCard driver={trip.driver} />
 
-      <Button label="Ver seguimiento" onPress={() => navigation.replace('TripTracking', { tripId })} style={styles.cta} />
+      <Button
+        label="Ver seguimiento"
+        onPress={() => navigation.replace('TripTracking', { tripId })}
+        style={styles.cta}
+      />
     </View>
   );
 }

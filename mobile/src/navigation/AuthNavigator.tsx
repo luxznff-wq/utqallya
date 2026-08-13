@@ -1,10 +1,12 @@
-import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import React from 'react';
 
 import { ChooseUserTypeScreen } from '@/screens/auth/ChooseUserTypeScreen';
+import { ForgotPasswordScreen } from '@/screens/auth/ForgotPasswordScreen';
 import { LoginScreen } from '@/screens/auth/LoginScreen';
 import { RegisterDriverScreen } from '@/screens/auth/RegisterDriverScreen';
 import { RegisterPassengerScreen } from '@/screens/auth/RegisterPassengerScreen';
+import { ResetPasswordScreen } from '@/screens/auth/ResetPasswordScreen';
 import { colors } from '@/theme';
 import { AuthStackParamList } from '@/types';
 
@@ -20,6 +22,8 @@ export function AuthNavigator() {
       }}
     >
       <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+      <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
       <Stack.Screen name="ChooseUserType" component={ChooseUserTypeScreen} />
       <Stack.Screen name="RegisterPassenger" component={RegisterPassengerScreen} />
       <Stack.Screen name="RegisterDriver" component={RegisterDriverScreen} />

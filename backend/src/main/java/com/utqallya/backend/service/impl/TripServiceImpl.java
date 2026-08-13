@@ -11,9 +11,12 @@ import com.utqallya.backend.entity.DriverLocation;
 import com.utqallya.backend.entity.GeoLocation;
 import com.utqallya.backend.entity.Trip;
 import com.utqallya.backend.entity.User;
+import com.utqallya.backend.entity.Vehicle;
 import com.utqallya.backend.entity.enums.DriverApprovalStatus;
 import com.utqallya.backend.entity.enums.DriverAvailability;
+import com.utqallya.backend.entity.enums.CancelledBy;
 import com.utqallya.backend.entity.enums.NotificationType;
+import com.utqallya.backend.entity.enums.PaymentMethodCode;
 import com.utqallya.backend.entity.enums.TripStatus;
 import com.utqallya.backend.exception.BadRequestException;
 import com.utqallya.backend.exception.ConflictException;
@@ -23,6 +26,8 @@ import com.utqallya.backend.repository.DriverRepository;
 import com.utqallya.backend.repository.GeoLocationRepository;
 import com.utqallya.backend.repository.PaymentMethodRepository;
 import com.utqallya.backend.repository.TripRepository;
+import com.utqallya.backend.repository.TripOfferRepository;
+import com.utqallya.backend.service.DirectionsService;
 import com.utqallya.backend.service.NotificationService;
 import com.utqallya.backend.service.TripService;
 import com.utqallya.backend.util.GeoUtils;
@@ -38,29 +43,31 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Implementación del ciclo de vida de un viaje. No hay negociación de precio,
- * subasta ni chat: el primer conductor disponible que acepta se queda con el
- * viaje (ver {@code TripRepository#tryAssignDriver} para la garantía atómica).
+ * Implementación del ciclo de vida después de que el pasajero elige una oferta.
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class TripServiceImpl implements TripService {
 
+    private static final int MAX_CONFIRMATION_ATTEMPTS = 5;
     private static final List<TripStatus> ACTIVE_PASSENGER_STATUSES = List.of(
             TripStatus.REQUESTED, TripStatus.SEARCHING_DRIVER, TripStatus.ACCEPTED,
             TripStatus.DRIVER_ARRIVING, TripStatus.WAITING_CONFIRMATION, TripStatus.IN_PROGRESS
     );
 
     private final TripRepository tripRepository;
+    private final TripOfferRepository tripOfferRepository;
     private final GeoLocationRepository geoLocationRepository;
     private final PaymentMethodRepository paymentMethodRepository;
     private final DriverRepository driverRepository;
     private final DriverLocationRepository driverLocationRepository;
     private final NotificationService notificationService;
+    private final DirectionsService directionsService;
     private final AppProperties appProperties;
 
     @Override
@@ -68,6 +75,12 @@ public class TripServiceImpl implements TripService {
     public TripResponse requestTrip(User passenger, CreateTripRequest request) {
         if (!tripRepository.findByPassengerAndStatusIn(passenger, ACTIVE_PASSENGER_STATUSES).isEmpty()) {
             throw new ConflictException("Ya tienes un viaje en curso");
+        }
+        double directDistanceMeters = GeoUtils.distanceMeters(
+                request.origin().latitude(), request.origin().longitude(),
+                request.destination().latitude(), request.destination().longitude());
+        if (directDistanceMeters < 50) {
+            throw new BadRequestException("El origen y el destino deben estar separados por al menos 50 metros");
         }
 
         GeoLocation origin = geoLocationRepository.save(GeoLocation.builder()
@@ -85,22 +98,21 @@ public class TripServiceImpl implements TripService {
         var paymentMethod = paymentMethodRepository.findByCode(request.paymentMethod())
                 .orElseThrow(() -> new IllegalStateException("Método de pago no sembrado: " + request.paymentMethod()));
 
-        double distanceKm = GeoUtils.distanceKm(origin.getLatitude(), origin.getLongitude(),
+        var route = directionsService.getRoute(origin.getLatitude(), origin.getLongitude(),
                 destination.getLatitude(), destination.getLongitude());
-        int etaMinutes = (int) Math.max(1, Math.ceil(distanceKm / appProperties.getTrip().getAverageSpeedKmh() * 60));
-        double fare = Math.round((appProperties.getTrip().getBaseFare()
-                + appProperties.getTrip().getFarePerKm() * distanceKm) * 100.0) / 100.0;
+        double distanceKm = route.distanceKm();
+        int etaMinutes = route.durationMinutes();
 
         Trip trip = Trip.builder()
                 .passenger(passenger)
                 .origin(origin)
                 .destination(destination)
                 .paymentMethod(paymentMethod)
+                .vehicleType(request.vehicleType())
                 .status(TripStatus.SEARCHING_DRIVER)
                 .confirmationCode(TripCodeGenerator.generate(appProperties.getTrip().getConfirmationCodeLength()))
                 .distanceKm(distanceKm)
                 .estimatedDurationMinutes(etaMinutes)
-                .fare(fare)
                 .searchRadiusMeters(appProperties.getTrip().getSearchRadiusMeters())
                 .build();
         tripRepository.save(trip);
@@ -115,6 +127,14 @@ public class TripServiceImpl implements TripService {
                 .findByDriverApprovalStatusAndDriverAvailability(DriverApprovalStatus.APPROVED, DriverAvailability.AVAILABLE);
 
         for (DriverLocation location : candidates) {
+            Vehicle vehicle = location.getDriver().getVehicle();
+            if (vehicle == null || vehicle.getType() != trip.getVehicleType()) {
+                continue;
+            }
+            if (trip.getPaymentMethod().getCode() == PaymentMethodCode.YAPE
+                    && !hasYapeConfigured(location.getDriver())) {
+                continue;
+            }
             double distance = GeoUtils.distanceMeters(
                     origin.getLatitude(), origin.getLongitude(), location.getLatitude(), location.getLongitude());
             if (distance <= trip.getSearchRadiusMeters()) {
@@ -127,37 +147,6 @@ public class TripServiceImpl implements TripService {
                 );
             }
         }
-    }
-
-    @Override
-    @Transactional
-    public TripResponse acceptTrip(User driverUser, UUID tripId) {
-        Driver driver = getDriverByUser(driverUser);
-
-        if (driver.getApprovalStatus() != DriverApprovalStatus.APPROVED) {
-            throw new BadRequestException("Tu documentación aún no ha sido aprobada");
-        }
-        if (driver.getAvailability() != DriverAvailability.AVAILABLE) {
-            throw new BadRequestException("Debes estar disponible para aceptar viajes");
-        }
-
-        int updatedRows = tripRepository.tryAssignDriver(tripId, driver, Instant.now());
-        if (updatedRows == 0) {
-            throw new ConflictException("Este viaje ya no está disponible: otro conductor lo tomó o fue cancelado");
-        }
-
-        // El conductor queda reservado para este viaje hasta que finalice o se cancele.
-        driver.setAvailability(DriverAvailability.UNAVAILABLE);
-        driverRepository.save(driver);
-
-        Trip trip = getTripOrThrow(tripId);
-        trip.setStatus(TripStatus.DRIVER_ARRIVING);
-        tripRepository.save(trip);
-
-        notificationService.notify(trip.getPassenger(), NotificationType.TRIP_ACCEPTED,
-                "Conductor asignado", driver.getUser().getFullName() + " aceptó tu viaje y va en camino", trip.getId());
-
-        return TripResponse.forDriver(trip);
     }
 
     @Override
@@ -177,12 +166,18 @@ public class TripServiceImpl implements TripService {
     }
 
     @Override
-    @Transactional
+    @Transactional(noRollbackFor = BadRequestException.class)
     public TripResponse confirmCode(User driverUser, UUID tripId, ConfirmCodeRequest request) {
         Trip trip = getOwnedTripForDriver(driverUser, tripId);
         requireStatus(trip, TripStatus.WAITING_CONFIRMATION);
 
+        if (trip.getConfirmationAttempts() >= MAX_CONFIRMATION_ATTEMPTS) {
+            throw new BadRequestException(
+                    "Se alcanzó el límite de intentos. El pasajero debe cancelar y solicitar otro viaje");
+        }
         if (!trip.getConfirmationCode().equals(request.code())) {
+            trip.setConfirmationAttempts(trip.getConfirmationAttempts() + 1);
+            tripRepository.save(trip);
             throw new BadRequestException("El código ingresado es incorrecto");
         }
 
@@ -234,8 +229,10 @@ public class TripServiceImpl implements TripService {
 
         trip.setStatus(TripStatus.CANCELLED);
         trip.setCancelledAt(Instant.now());
-        trip.setCancelReason(request.reason());
+        trip.setCancelReason(request.reason().trim());
+        trip.setCancelledBy(isPassenger ? CancelledBy.PASSENGER : CancelledBy.DRIVER);
         tripRepository.save(trip);
+        tripOfferRepository.expirePendingByTripId(trip.getId());
 
         if (trip.getDriver() != null) {
             Driver driver = trip.getDriver();
@@ -253,6 +250,39 @@ public class TripServiceImpl implements TripService {
     }
 
     @Override
+    @Transactional
+    public TripResponse confirmPayment(User actor, UUID tripId) {
+        Trip trip = getTripOrThrow(tripId);
+        boolean isPassenger = trip.getPassenger().getId().equals(actor.getId());
+        boolean isDriver = trip.getDriver() != null && trip.getDriver().getUser().getId().equals(actor.getId());
+        if (!isPassenger && !isDriver) {
+            throw new ResourceNotFoundException("Viaje no encontrado");
+        }
+        if (trip.getStatus() != TripStatus.FINISHED && trip.getStatus() != TripStatus.RATED) {
+            throw new BadRequestException("El pago sólo puede confirmarse después de finalizar el viaje");
+        }
+        boolean newlyConfirmed = false;
+        if (isPassenger && trip.getPassengerPaymentConfirmedAt() == null) {
+            trip.setPassengerPaymentConfirmedAt(Instant.now());
+            newlyConfirmed = true;
+        }
+        if (isDriver && trip.getDriverPaymentConfirmedAt() == null) {
+            trip.setDriverPaymentConfirmedAt(Instant.now());
+            newlyConfirmed = true;
+        }
+        tripRepository.save(trip);
+        if (newlyConfirmed) {
+            User counterpart = isPassenger ? trip.getDriver().getUser() : trip.getPassenger();
+            notificationService.notify(counterpart, NotificationType.PAYMENT_CONFIRMED,
+                    "Confirmación de pago",
+                    isPassenger ? "El pasajero confirmó el pago del viaje."
+                            : "El conductor confirmó haber recibido el pago.",
+                    trip.getId());
+        }
+        return isPassenger ? TripResponse.forPassenger(trip) : TripResponse.forDriver(trip);
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public TripResponse getTripForPassenger(User passenger, UUID tripId) {
         Trip trip = tripRepository.findByIdAndPassenger(tripId, passenger)
@@ -264,6 +294,18 @@ public class TripServiceImpl implements TripService {
     @Transactional(readOnly = true)
     public TripResponse getTripForDriver(User driverUser, UUID tripId) {
         return TripResponse.forDriver(getOwnedTripForDriver(driverUser, tripId));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<TripResponse> getActiveTrip(User user, boolean driverRole) {
+        if (driverRole) {
+            Driver driver = getDriverByUser(user);
+            return tripRepository.findByDriverIdAndStatusIn(driver.getId(), ACTIVE_PASSENGER_STATUSES)
+                    .stream().findFirst().map(TripResponse::forDriver);
+        }
+        return tripRepository.findByPassengerAndStatusIn(user, ACTIVE_PASSENGER_STATUSES)
+                .stream().findFirst().map(TripResponse::forPassenger);
     }
 
     @Override
@@ -309,7 +351,9 @@ public class TripServiceImpl implements TripService {
             trip.setStatus(TripStatus.CANCELLED);
             trip.setCancelledAt(Instant.now());
             trip.setCancelReason("No se encontró un conductor disponible dentro del tiempo límite");
+            trip.setCancelledBy(CancelledBy.SYSTEM);
             tripRepository.save(trip);
+            tripOfferRepository.expirePendingByTripId(trip.getId());
 
             notificationService.notify(trip.getPassenger(), NotificationType.TRIP_CANCELLED,
                     "No encontramos un conductor", "Ningún conductor disponible aceptó tu viaje. Inténtalo nuevamente.", trip.getId());
@@ -319,6 +363,11 @@ public class TripServiceImpl implements TripService {
     private Driver getDriverByUser(User user) {
         return driverRepository.findByUser(user)
                 .orElseThrow(() -> new ResourceNotFoundException("Perfil de conductor no encontrado"));
+    }
+
+    private boolean hasYapeConfigured(Driver driver) {
+        return driver.getYapePhone() != null && !driver.getYapePhone().isBlank()
+                && driver.getYapeHolderName() != null && !driver.getYapeHolderName().isBlank();
     }
 
     private Trip getTripOrThrow(UUID tripId) {

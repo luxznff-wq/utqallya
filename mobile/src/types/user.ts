@@ -7,6 +7,10 @@ export interface UserProfile {
   phone: string;
   role: UserRole;
   blocked: boolean;
+  /** Sólo existe en la respuesta privada de /users/me. */
+  emergencyContactName?: string | null;
+  /** Sólo existe en la respuesta privada de /users/me. */
+  emergencyContactPhone?: string | null;
 }
 
 export interface AuthResponse {

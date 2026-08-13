@@ -15,6 +15,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDate;
+
 /**
  * Perfil extendido de un usuario con rol DRIVER: documentación requerida
  * para operar y estado de aprobación administrado por el panel admin.
@@ -49,6 +51,16 @@ public class Driver extends BaseEntity {
 
     @Column(nullable = false)
     private String soatPhotoUrl;
+
+    private LocalDate licenseExpiresAt;
+
+    private LocalDate soatExpiresAt;
+
+    @Column(length = 120)
+    private String yapeHolderName;
+
+    @Column(length = 9)
+    private String yapePhone;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)

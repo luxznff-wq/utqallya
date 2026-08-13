@@ -19,6 +19,8 @@ public class AppProperties {
     private final Cloudinary cloudinary = new Cloudinary();
     private final Firebase firebase = new Firebase();
     private final Cors cors = new Cors();
+    private final Directions directions = new Directions();
+    private final PasswordReset passwordReset = new PasswordReset();
 
     @Getter
     @Setter
@@ -35,10 +37,6 @@ public class AppProperties {
         /** Longitud del código numérico de confirmación (4 a 6 dígitos). */
         private int confirmationCodeLength;
         private int driverResponseTimeoutSeconds;
-        /** Tarifa fija (S/) que se cobra por el solo hecho de tomar el viaje. Sin tarifas dinámicas. */
-        private double baseFare;
-        /** Tarifa (S/) por cada kilómetro recorrido, sumada a la tarifa base. */
-        private double farePerKm;
         /** Velocidad promedio asumida (km/h) para estimar la duración del viaje. */
         private double averageSpeedKmh;
     }
@@ -62,5 +60,22 @@ public class AppProperties {
     @Setter
     public static class Cors {
         private String allowedOrigins;
+    }
+
+    @Getter
+    @Setter
+    public static class Directions {
+        private String apiKey;
+        /** Si es false (o no hay api-key), se usa línea recta + Haversine como respaldo. */
+        private boolean enabled;
+    }
+
+    @Getter
+    @Setter
+    public static class PasswordReset {
+        private boolean mailEnabled;
+        private String mailFrom;
+        private int expirationMinutes = 15;
+        private int maxAttempts = 5;
     }
 }

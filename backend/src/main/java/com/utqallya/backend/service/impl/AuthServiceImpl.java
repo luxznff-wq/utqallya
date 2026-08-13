@@ -112,6 +112,8 @@ public class AuthServiceImpl implements AuthService {
                 .dniPhotoUrl(fileStorageService.upload(dniPhoto, "drivers/dni"))
                 .licensePhotoUrl(fileStorageService.upload(licensePhoto, "drivers/license"))
                 .soatPhotoUrl(fileStorageService.upload(soatPhoto, "drivers/soat"))
+                .licenseExpiresAt(request.licenseExpiresAt())
+                .soatExpiresAt(request.soatExpiresAt())
                 .approvalStatus(DriverApprovalStatus.PENDING)
                 .availability(DriverAvailability.UNAVAILABLE)
                 .ratingAverage(0.0)

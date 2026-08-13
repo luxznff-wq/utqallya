@@ -42,10 +42,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 UUID userId = jwtTokenProvider.getUserId(token);
                 var userDetails = userDetailsService.loadUserById(userId);
 
-                var authentication = new UsernamePasswordAuthenticationToken(
-                        userDetails, null, userDetails.getAuthorities());
-                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                if (userDetails.isEnabled()
+                        && userDetails.isAccountNonLocked()
+                        && userDetails.getSessionVersion() == jwtTokenProvider.getSessionVersion(token)) {
+                    var authentication = new UsernamePasswordAuthenticationToken(
+                            userDetails, null, userDetails.getAuthorities());
+                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                }
             } catch (UsernameNotFoundException ignored) {
                 // Token estructuralmente válido pero el usuario ya no existe: se ignora, la request queda anónima.
             }
