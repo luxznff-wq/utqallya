@@ -12,6 +12,11 @@
       "distribution": "internal",
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://utqallya-production.up.railway.app/api",
+        "EXPO_PUBLIC_EAS_PROJECT_ID": "1198c137-3094-48f8-9fc4-719031ff4aee",
+        "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY_ANDROID": "AIzaSyCdfVn0hkt7XzF1_Ghc-kF6Xtx9uEIN-1w"
       }
     },
     "production": {
