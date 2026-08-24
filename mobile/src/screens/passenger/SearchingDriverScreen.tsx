@@ -1,6 +1,7 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Animated, Easing, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components';
 import { useTrip } from '@/context/TripContext';
@@ -18,6 +19,7 @@ const PULSE_DURATION_MS = 2200;
 export function SearchingDriverScreen({ navigation, route }: Props) {
   const { tripId } = route.params;
   const { trip, track, stopTracking } = useTrip();
+  const insets = useSafeAreaInsets();
   const rings = useMemo(() => Array.from({ length: RING_COUNT }, () => new Animated.Value(0)), []);
   const cancelledRef = useRef(false);
   const [offers, setOffers] = useState<TripOffer[]>([]);
@@ -97,56 +99,59 @@ export function SearchingDriverScreen({ navigation, route }: Props) {
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.radarWrapper}>
-        {rings.map((ring, index) => (
-          <Animated.View
-            key={index}
-            style={[
-              styles.ring,
-              {
-                opacity: ring.interpolate({ inputRange: [0, 0.6, 1], outputRange: [0.55, 0.2, 0] }),
-                transform: [{ scale: ring.interpolate({ inputRange: [0, 1], outputRange: [1, 2.4] }) }],
-              },
-            ]}
-          />
-        ))}
-        <View style={styles.carBadge}>
-          <Text style={styles.carIcon}>🚗</Text>
+    <View style={[styles.container, { paddingTop: insets.top + spacing.lg, paddingBottom: insets.bottom + spacing.md }]}>
+      <View style={styles.content}>
+        <View style={styles.radarWrapper}>
+          {rings.map((ring, index) => (
+            <Animated.View
+              key={index}
+              style={[
+                styles.ring,
+                {
+                  opacity: ring.interpolate({ inputRange: [0, 0.6, 1], outputRange: [0.55, 0.2, 0] }),
+                  transform: [{ scale: ring.interpolate({ inputRange: [0, 1], outputRange: [1, 2.4] }) }],
+                },
+              ]}
+            />
+          ))}
+          <View style={styles.carBadge}>
+            <Text style={styles.carIcon}>🚗</Text>
+          </View>
         </View>
+
+        <Text style={[typography.h2, styles.title]}>{offers.length ? 'Elige una oferta' : 'Esperando ofertas…'}</Text>
+        <Text style={styles.caption}>
+          {offers.length
+            ? 'Los precios los proponen los conductores. Revisa conductor, vehículo y calificación.'
+            : 'Notificamos a los conductores disponibles en tu zona'}
+        </Text>
+
+        {offers.length > 0 && (
+          <ScrollView style={styles.offers} contentContainerStyle={styles.offersContent} showsVerticalScrollIndicator={false}>
+            {offers.map((offer) => (
+              <View key={offer.id} style={styles.offerCard}>
+                <View style={styles.offerHeader}>
+                  <View style={styles.offerDriver}>
+                    <Text style={styles.driverName}>{offer.driver.user.fullName}</Text>
+                    <Text style={styles.offerMeta}>
+                      ★ {offer.driver.ratingAverage.toFixed(1)} · {offer.driver.vehicle?.plate ?? 'Sin placa'}
+                    </Text>
+                  </View>
+                  <Text style={styles.amount}>S/ {Number(offer.amount).toFixed(2)}</Text>
+                </View>
+                <Button
+                  label="Elegir esta oferta"
+                  onPress={() => selectOffer(offer)}
+                  loading={selectingOfferId === offer.id}
+                  disabled={selectingOfferId !== null && selectingOfferId !== offer.id}
+                />
+              </View>
+            ))}
+          </ScrollView>
+        )}
       </View>
 
-      <Text style={[typography.h2, styles.title]}>{offers.length ? 'Elige una oferta' : 'Esperando ofertas…'}</Text>
-      <Text style={styles.caption}>
-        {offers.length
-          ? 'Los precios los proponen los conductores. Revisa conductor, vehículo y calificación.'
-          : 'Notificamos a los conductores disponibles en tu zona'}
-      </Text>
-
-      {offers.length > 0 && (
-        <ScrollView style={styles.offers} contentContainerStyle={styles.offersContent}>
-          {offers.map((offer) => (
-            <View key={offer.id} style={styles.offerCard}>
-              <View style={styles.offerHeader}>
-                <View style={styles.offerDriver}>
-                  <Text style={styles.driverName}>{offer.driver.user.fullName}</Text>
-                  <Text style={styles.offerMeta}>
-                    ★ {offer.driver.ratingAverage.toFixed(1)} · {offer.driver.vehicle?.plate ?? 'Sin placa'}
-                  </Text>
-                </View>
-                <Text style={styles.amount}>S/ {Number(offer.amount).toFixed(2)}</Text>
-              </View>
-              <Button
-                label="Elegir esta oferta"
-                onPress={() => selectOffer(offer)}
-                loading={selectingOfferId === offer.id}
-                disabled={selectingOfferId !== null && selectingOfferId !== offer.id}
-              />
-            </View>
-          ))}
-        </ScrollView>
-      )}
-
+      {/* Fuera del contenedor centrado: el botón queda siempre fijo y visible abajo. */}
       <Button label="Cancelar búsqueda" variant="outline" onPress={handleCancel} style={styles.cancel} />
     </View>
   );
@@ -160,9 +165,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+    paddingHorizontal: spacing.lg,
+  },
+  content: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: spacing.lg,
   },
   radarWrapper: {
     width: RADAR_SIZE,
@@ -199,7 +207,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   cancel: {
-    marginTop: spacing.lg,
+    marginTop: spacing.md,
     alignSelf: 'stretch',
   },
   offers: { width: '100%', maxHeight: 300, marginTop: spacing.md },
